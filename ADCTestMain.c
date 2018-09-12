@@ -97,6 +97,21 @@ int main(void){
   }
 }
 
-
+/*
+//function that calculates jitter for 1000 unit array of timestamps
+int main(void){
+	//variables to store minimum and maximum differences
+	uint8_t maxdif = 0x00;
+	uint8_t mindif = 0xFF;
+	for(int i = 1;i < 1000;i++){           //for every element in the array
+		//if difference is greater than max or less than min, update them
+		if((time[i] - time[i - 1]) > maxdif)  
+			maxdif = time[i] - time[i - 1];
+		if((time[i] - time[i - 1]) < mindif) 
+			mindif = time[i] - time[i - 1];		
+	}
+	uint8_t jitter = maxdif - mindif;     //definition of jitter
+}
+*/
 
 
