@@ -113,20 +113,31 @@ int main(void){
   }
 }
 void process_data(void){
-  uint32_t data_count[100];
-  uint32_t data_num[100];
+  //sort the array of 1000 inputs from potentiometer
   uint16_t x, j, temp;
-  for (int i = 1; i < 15; i++){
+  for (int i = 1; i < 1000; i++){
     for (j = i; (j > 0 && data[j-1] > data[j]); j--){
       temp = data[j];
       data[j] = data[j-1];
       data[j-1] = temp;
     }
   }
+
+  //find how many unique numbers in the 1000 inputs
+  uint32_t n = 0; //number of unique numbers in the 1000
+  for (int i = 1; i < 1000; i++) {
+    if (data[i - 1] < data[i]) {
+      n++;
+    }
+  }
+  //create arrays to store the number of occurances for each
+    //unique number and the number itself
+  uint32_t data_count[n];
+  uint32_t data_num[n];
   uint32_t num_count; 
   uint32_t index = 0;
   uint32_t k = 0;
-  while (k < 1000) {
+  while ((k < 1000) && (index < n)) {
     data_num[index] = data[k];
     num_count = 0;
     while (data[k] == data[k+1]) {
@@ -138,22 +149,12 @@ void process_data(void){
     data_count[index] = num_count;
     index++;
   }
+
+  //print graph to screen
   double res = 127 / (data_num[index-1] - data_num[0]);
   for (int l = index - 1; l >= 0; l--){
     ST7735_Line((int)(data_num[l] * res), (int)(data_num[l] * res), 159, (data_count[l] / 6.5), ST7735_BLACK);
   }
-
-  /*for (int j = 0; j < 15; j++){
-    data_count[j] = 0;
-  }
-  for (int i = 0; i < 1000; i++){
-    data_count[2054 - data[i]]++;
-  }
-  uint8_t col = 8;
-  for (int l = 14; l >= 0; l--){
-    ST7735_Line(col, col, 159, (data_count[l] / 6.5), ST7735_BLACK);
-    col += 8;
-  }*/
 }
 //************* ST7735_Line********************************************
 //  Draws one line on the ST7735 color LCD
@@ -168,7 +169,12 @@ void process_data(void){
 //        color 16-bit color, which can be produced by ST7735_Color565() 
 // Output: none
 void ST7735_Line(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16_t color){
-  if ((x1 >= 0) && (x1 < 128) && (y1 >= 0) && (y1 < 160)){
+  int32_t A, B, P;
+  int16_t current_y;
+
+  //make sure pixels are within area of screen
+  if ((x1 < 128) && (y1 < 160)){
+    //horizontal line
     if (x1 == x2){
       if (y1 < y2){
         for (int y = y1; y <= y2; y++){
@@ -181,7 +187,8 @@ void ST7735_Line(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16_t co
         }
       }
     }
-    if (y1 == y2){
+    //vertical line
+    else if (y1 == y2){
       if (x1 < x2){
         for (int x = x1; x <= x2; x++){
           ST7735_DrawPixel(x, y1, color);
@@ -193,6 +200,49 @@ void ST7735_Line(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16_t co
         }
       }
     }
+    //diagonal line
+    else {
+      ST7735_DrawPixel(x1, y1, color);
+      current_y = y1;
+      for (int x = x1 + 1; x < x2; x++) {
+        A = 2 * ((int16_t)y2 - current_y);
+        B = A - (2 * ((int16_t)x2 - x);
+        P = A - ((int16_t)x2 - x);
+        if (P < 0) {
+          P += A;
+        }
+        else {
+          current_y++;
+          P += B;
+        }
+        ST7735_DrawPixel(x, current_y, color);
+      }
+      ST7735_DrawPixel(x2, y2, color);
+    }
+
+
+
+    //diagonal line with positive slope (goes down and to the right)
+    /*else if ((x1 < x2) && (y1 < y2) && ((x2 - x1) > (y2 - y1))) {
+      for (int x = x1; x <= x2; x++) {
+        slope = (y2 - y1)/(x2 - x1);
+        while (current_x <= x2) {
+          current_y = slope * (x - x1) + y1;
+          ST7735_DrawPixel(x, current_y, color);
+        }
+      }
+    }
+    //diagonal line with positive slope (goes up and to the left)
+    else if ((x2 < x1) && (y2 < y1) && (x1 - x2) > (y1 - y2))) {
+      for (int x = x2; x <= x1; x++) {
+        slope = (y1 - y2)/(x1 - x2);
+        while (current_x <= x1) {
+          current_y = slope * (x - x2) + y2;
+          ST7735_DrawPixel(x, current_y, color);
+        }
+      }
+    }*/
+
   }
 }
 
