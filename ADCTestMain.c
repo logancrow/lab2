@@ -161,6 +161,7 @@ int CalcJitter(void){
 
 
 void process_data(void){
+	
   //sort the array of 1000 inputs from potentiometer
   uint16_t j, temp;
   for (int i = 1; i < 1000; i++){
@@ -169,19 +170,20 @@ void process_data(void){
       data[j] = data[j-1];
       data[j-1] = temp;
     }
-  }
-
+  } 
+  
   //find how many unique numbers in the 1000 inputs
   uint32_t n = 0; //number of unique numbers in the 1000
   for (int i = 1; i < 1000; i++) {
     if (data[i] != data[i - 1]) {
       n++;
     }
-  }
+  } 
+
   //create arrays to store the number of occurances for each
-    //unique number and the number itself
-  uint32_t data_count[n];
-  uint32_t data_num[n];
+  //unique number and the number itself
+  int32_t data_count[128];
+  int32_t data_num[128];
   uint32_t num_count; 
   uint32_t ind = 0;
   uint32_t k = 0;
@@ -196,13 +198,16 @@ void process_data(void){
     k++;
     data_count[ind] = num_count;
     ind++;
-  }
-
+  } 
   //print graph to screen
-  double res = 127 / (data_num[ind - 1] - data_num[0]);
+	ST7735_XYplotInit("ADC Data", data_num[0], data_num[n-1], 0, 1000);
+	ST7735_XYplot(n,data_num,data_count);
+  /*double res = 127 / (data_num[ind - 1] - data_num[0]);
   for (int l = ind - 1; l >= 0; l--){
-    ST7735_Line((int)(data_num[l] * res), (int)(data_num[l] * res), 159, (data_count[l] / 6.5), ST7735_BLACK);
-  }
+    ST7735_Line((int)(data_num[l] * res), (int)(data_num[l] * res), 159, (data_count[l] / 6.5), ST7735_WHITE);
+  } 
+	return;
+	*/
 }
 //************* ST7735_Line********************************************
 //  Draws one line on the ST7735 color LCD
