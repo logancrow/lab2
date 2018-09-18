@@ -9,7 +9,6 @@
 /* This example accompanies the book
    "Embedded Systems: Real Time Interfacing to Arm Cortex M Microcontrollers",
    ISBN: 978-1463590154, Jonathan Valvano, copyright (c) 2015
-
  Copyright 2015 by Jonathan W. Valvano, valvano@mail.utexas.edu
     You may use, edit, run or distribute this file
     as long as the above copyright notice remains
@@ -26,37 +25,32 @@
 // bottom of X-ohm potentiometer connected to ground
 // top of X-ohm potentiometer connected to +3.3V 
 #include <stdint.h>
+#include <stdio.h>
 #include "ADCSWTrigger.h"
 #include "../inc/tm4c123gh6pm.h"
 #include "PLL.h"
+#include "ST7735.h"
+#include "fixed.h"
+#include "Timer1.h" 
 
 #define PF2             (*((volatile uint32_t *)0x40025010))
 #define PF1             (*((volatile uint32_t *)0x40025008))
+#define PF4  					  (*((volatile uint32_t *)0x40025040))
 void DisableInterrupts(void); // Disable interrupts
 void EnableInterrupts(void);  // Enable interrupts
 long StartCritical (void);    // previous I bit, disable interrupts
 void EndCritical(long sr);    // restore I bit to previous value
 void WaitForInterrupt(void);  // low power mode
+void ST7735_Line(uint16_t, uint16_t, uint16_t, uint16_t, uint16_t);
+int CalcJitter(void);
+void DelayWait10ms(uint32_t n);
+void PortF_Init(void);
+void process_data(void);
  
 volatile uint32_t ADCvalue;
 // This debug function initializes Timer0A to request interrupts
 // at a 100 Hz frequency.  It is similar to FreqMeasure.c.
-/*
-//function that calculates jitter for 1000 unit array of timestamps
-int main(void){
-  //variables to store minimum and maximum differences
-  uint32_t maxdif = 0x00;
-  uint32_t mindif = 0xFF;
-  for(int i = 1;i < 1000;i++){           //for every element in the array
-    //if difference is greater than max or less than min, update them
-    if((time[i] - time[i - 1]) > maxdif)  
-      maxdif = time[i] - time[i - 1];
-    if((time[i] - time[i - 1]) < mindif) 
-      mindif = time[i] - time[i - 1];   
-  }
-  uint32_t jitter = maxdif - mindif;     //definition of jitter
-}
-*/
+
 void Timer0A_Init100HzInt(void){
   volatile uint32_t delay;
   DisableInterrupts();
@@ -95,26 +89,80 @@ void Timer0A_Handler(void){
 	}
   PF2 ^= 0x04;                   // profile
 }
+
+void Pause(void){
+  while(PF4==0x00){ 
+    DelayWait10ms(10);
+  }
+  while(PF4==0x10){
+    DelayWait10ms(10);
+  }
+}
+
 int main(void){
   PLL_Init(Bus80MHz);                   // 80 MHz
+	Timer1_Init(Bus80MHz);
   SYSCTL_RCGCGPIO_R |= 0x20;            // activate port F
   ADC0_InitSWTriggerSeq3_Ch9();         // allow time to finish activating
   Timer0A_Init100HzInt();               // set up Timer0A for 100 Hz interrupts
-  GPIO_PORTF_DIR_R |= 0x06;             // make PF2, PF1 out (built-in LED)
-  GPIO_PORTF_AFSEL_R &= ~0x06;          // disable alt funct on PF2, PF1
-  GPIO_PORTF_DEN_R |= 0x06;             // enable digital I/O on PF2, PF1
-                                        // configure PF2 as GPIO
-  GPIO_PORTF_PCTL_R = (GPIO_PORTF_PCTL_R&0xFFFFF00F)+0x00000000;
-  GPIO_PORTF_AMSEL_R = 0;               // disable analog functionality on PF
+  PortF_Init();
+	ST7735_InitR(INITR_REDTAB);
   PF2 = 0;                      // turn off LED
   EnableInterrupts();
+	char message[20];
   while(1){
-    PF1 ^= 0x02;  // toggles when running in main
+		ST7735_FillScreen(ST7735_BLACK); 
+    ST7735_SetCursor(0,0);
+		while(count < 1000){};
+		int jitter = CalcJitter();
+		sprintf(message,"Jitter: %d us\r",jitter);
+    ST7735_OutString(message);			
+    Pause();
+    ST7735_FillScreen(0);  // set screen to black
+    ST7735_SetCursor(0,0);
+		process_data();
+    Pause();
+	  
   }
 }
+
+
+// PF4 is input
+// Make PF2 an output, enable digital I/O, ensure alt. functions off
+void PortF_Init(void){ 
+  SYSCTL_RCGCGPIO_R |= 0x20;        // 1) activate clock for Port F
+  while((SYSCTL_PRGPIO_R&0x20)==0){}; // allow time for clock to start
+                                    // 2) no need to unlock PF2, PF4
+  GPIO_PORTF_PCTL_R &= ~0x000F0F00; // 3) regular GPIO
+  GPIO_PORTF_AMSEL_R &= ~0x14;      // 4) disable analog function on PF2, PF4
+  GPIO_PORTF_PUR_R |= 0x10;         // 5) pullup for PF4
+  GPIO_PORTF_DIR_R |= 0x04;         // 5) set direction to output
+  GPIO_PORTF_AFSEL_R &= ~0x14;      // 6) regular port function
+  GPIO_PORTF_DEN_R |= 0x14;         // 7) enable digital port
+}
+
+
+//function that calculates jitter for 1000 unit array of timestamps
+int CalcJitter(void){
+  //variables to store minimum and maximum differences
+  uint32_t maxdif = 0x00;
+  uint32_t mindif = 0xFF;
+  for(int i = 1;i < 1000;i++){           //for every element in the array
+    //if difference is greater than max or less than min, update them
+    if((time[i] - time[i - 1]) > maxdif)  
+      maxdif = time[i] - time[i - 1];
+    if((time[i] - time[i - 1]) < mindif) 
+      mindif = time[i] - time[i - 1];   
+  }
+  uint32_t jitter = maxdif - mindif;     //definition of jitter
+	jitter = (jitter*25/2000);
+	return jitter;
+}
+
+
 void process_data(void){
   //sort the array of 1000 inputs from potentiometer
-  uint16_t x, j, temp;
+  uint16_t j, temp;
   for (int i = 1; i < 1000; i++){
     for (j = i; (j > 0 && data[j-1] > data[j]); j--){
       temp = data[j];
@@ -126,7 +174,7 @@ void process_data(void){
   //find how many unique numbers in the 1000 inputs
   uint32_t n = 0; //number of unique numbers in the 1000
   for (int i = 1; i < 1000; i++) {
-    if (data[i] < data[i - 1]) {
+    if (data[i] != data[i - 1]) {
       n++;
     }
   }
@@ -137,7 +185,7 @@ void process_data(void){
   uint32_t num_count; 
   uint32_t ind = 0;
   uint32_t k = 0;
-  while ((k < 1000) && (ind < n)) {
+  while ((k < 999) && (ind < n)) {
     data_num[ind] = data[k];
     num_count = 0;
     while (data[k] == data[k+1]) {
@@ -206,7 +254,7 @@ void ST7735_Line(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16_t co
       current_y = y1;
       for (int x = x1 + 1; x < x2; x++) {
         A = 2 * ((int16_t)y2 - current_y);
-        B = A - (2 * ((int16_t)x2 - x);
+        B = A - (2 * ((int16_t)x2 - x));
         P = A - ((int16_t)x2 - x);
         if (P < 0) {
           P += A;
@@ -243,6 +291,20 @@ void ST7735_Line(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16_t co
       }
     }*/
 
+  }
+}
+
+// Subroutine to wait 10 msec
+// Inputs: None
+// Outputs: None
+// Notes: ...
+void DelayWait10ms(uint32_t n){uint32_t volatile time;
+  while(n){
+    time = 727240*2/91;  // 10msec
+    while(time){
+	  	time--;
+    }
+    n--;
   }
 }
 
