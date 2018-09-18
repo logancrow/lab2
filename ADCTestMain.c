@@ -46,11 +46,11 @@ int CalcJitter(void);
 void DelayWait10ms(uint32_t n);
 void PortF_Init(void);
 void process_data(void);
+void Timer2A_Init10kHzInt(void);
  
 volatile uint32_t ADCvalue;
 // This debug function initializes Timer0A to request interrupts
 // at a 100 Hz frequency.  It is similar to FreqMeasure.c.
-
 void Timer0A_Init100HzInt(void){
   volatile uint32_t delay;
   DisableInterrupts();
@@ -71,6 +71,29 @@ void Timer0A_Init100HzInt(void){
   NVIC_PRI4_R = (NVIC_PRI4_R&0x00FFFFFF)|0x40000000; // top 3 bits
   NVIC_EN0_R = 1<<19;              // enable interrupt 19 in NVIC
 }
+/*
+// This debug function initializes Timer2A to request interrupts
+// at a 10000 Hz frequency.  It is similar to FreqMeasure.c.
+void Timer2A_Init10kHzInt(void){
+  volatile uint32_t delay;
+  DisableInterrupts();
+  // **** general initialization ****
+  SYSCTL_RCGCTIMER_R |= 0x04;      // activate timer2
+  delay = SYSCTL_RCGCTIMER_R;      // allow time to finish activating
+  TIMER2_CTL_R &= ~TIMER_CTL_TAEN; // disable timer2A during setup
+  TIMER2_CFG_R = 0;                // configure for 32-bit timer mode
+  // **** timer2A initialization ****
+                                   // configure for periodic mode
+  TIMER2_TAMR_R = TIMER_TAMR_TAMR_PERIOD;
+  TIMER2_TAILR_R = 7999;         // start value for 10000 Hz interrupts
+  TIMER2_IMR_R |= TIMER_IMR_TATOIM;// enable timeout (rollover) interrupt
+  TIMER2_ICR_R = TIMER_ICR_TATOCINT;// clear timer2A timeout flag
+  TIMER2_CTL_R |= TIMER_CTL_TAEN;  // enable timer2A 32-b, periodic, interrupts
+  // **** interrupt initialization ****
+                                   // Timer0A=priority 2
+  NVIC_PRI4_R = (NVIC_PRI4_R&0x00FFFFFF)|0x40000000; // top 3 bits
+  NVIC_EN0_R = 1<<19;              // enable interrupt 19 in NVIC
+} */
 
 //arrays to store data at interrupts
 uint32_t time[1000];
@@ -90,6 +113,11 @@ void Timer0A_Handler(void){
   PF2 ^= 0x04;                   // profile
 }
 
+void Timer2A_Handler(void){
+  PF2 ^= 0x04;                   // profile
+	PF2 ^= 0x04;
+}
+
 void Pause(void){
   while(PF4==0x00){ 
     DelayWait10ms(10);
@@ -105,15 +133,18 @@ int main(void){
   SYSCTL_RCGCGPIO_R |= 0x20;            // activate port F
   ADC0_InitSWTriggerSeq3_Ch9();         // allow time to finish activating
   Timer0A_Init100HzInt();               // set up Timer0A for 100 Hz interrupts
+	//Timer2A_Init10kHzInt();
   PortF_Init();
 	ST7735_InitR(INITR_REDTAB);
   PF2 = 0;                      // turn off LED
   EnableInterrupts();
 	char message[20];
   while(1){
-		ST7735_FillScreen(ST7735_BLACK); 
+		/*ST7735_FillScreen(ST7735_BLACK); 
     ST7735_SetCursor(0,0);
-		while(count < 1000){};
+		while(count < 1000){
+		  PF1 = (PF1*12345678)/1234567 +0x02; //to show jitter
+		};
 		int jitter = CalcJitter();
 		sprintf(message,"Jitter: %d us\r",jitter);
     ST7735_OutString(message);			
@@ -121,8 +152,9 @@ int main(void){
     ST7735_FillScreen(0);  // set screen to black
     ST7735_SetCursor(0,0);
 		process_data();
-    Pause();
-	  
+    Pause(); */
+	  //PF1 ^= 0x02;    //regular
+		//GPIO_PORTF_DATA_R ^= 0x02;   //critical section
   }
 }
 
@@ -134,11 +166,11 @@ void PortF_Init(void){
   while((SYSCTL_PRGPIO_R&0x20)==0){}; // allow time for clock to start
                                     // 2) no need to unlock PF2, PF4
   GPIO_PORTF_PCTL_R &= ~0x000F0F00; // 3) regular GPIO
-  GPIO_PORTF_AMSEL_R &= ~0x14;      // 4) disable analog function on PF2, PF4
+  GPIO_PORTF_AMSEL_R &= ~0x16;      // 4) disable analog function on PF2, PF4, PF1
   GPIO_PORTF_PUR_R |= 0x10;         // 5) pullup for PF4
-  GPIO_PORTF_DIR_R |= 0x04;         // 5) set direction to output
-  GPIO_PORTF_AFSEL_R &= ~0x14;      // 6) regular port function
-  GPIO_PORTF_DEN_R |= 0x14;         // 7) enable digital port
+  GPIO_PORTF_DIR_R |= 0x06;         // 5) set direction to output
+  GPIO_PORTF_AFSEL_R &= ~0x16;      // 6) regular port function
+  GPIO_PORTF_DEN_R |= 0x16;         // 7) enable digital port
 }
 
 
