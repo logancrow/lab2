@@ -7,3 +7,4 @@
 .\adctestmain.o: ST7735.h
 .\adctestmain.o: fixed.h
 .\adctestmain.o: Timer1.h
+.\adctestmain.o: line.h

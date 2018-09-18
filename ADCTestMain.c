@@ -32,7 +32,8 @@
 #include "ST7735.h"
 #include "fixed.h"
 #include "Timer1.h" 
-
+#include "line.h"
+void ST7735_Line(uint16_t, uint16_t, uint16_t, uint16_t, uint16_t);
 #define PF2             (*((volatile uint32_t *)0x40025010))
 #define PF1             (*((volatile uint32_t *)0x40025008))
 #define PF4  					  (*((volatile uint32_t *)0x40025040))
@@ -41,7 +42,6 @@ void EnableInterrupts(void);  // Enable interrupts
 long StartCritical (void);    // previous I bit, disable interrupts
 void EndCritical(long sr);    // restore I bit to previous value
 void WaitForInterrupt(void);  // low power mode
-void ST7735_Line(uint16_t, uint16_t, uint16_t, uint16_t, uint16_t);
 int CalcJitter(void);
 void DelayWait10ms(uint32_t n);
 void PortF_Init(void);
@@ -71,7 +71,7 @@ void Timer0A_Init100HzInt(void){
   NVIC_PRI4_R = (NVIC_PRI4_R&0x00FFFFFF)|0x40000000; // top 3 bits
   NVIC_EN0_R = 1<<19;              // enable interrupt 19 in NVIC
 }
-/*
+
 // This debug function initializes Timer2A to request interrupts
 // at a 10000 Hz frequency.  It is similar to FreqMeasure.c.
 void Timer2A_Init10kHzInt(void){
@@ -90,10 +90,10 @@ void Timer2A_Init10kHzInt(void){
   TIMER2_ICR_R = TIMER_ICR_TATOCINT;// clear timer2A timeout flag
   TIMER2_CTL_R |= TIMER_CTL_TAEN;  // enable timer2A 32-b, periodic, interrupts
   // **** interrupt initialization ****
-                                   // Timer0A=priority 2
-  NVIC_PRI4_R = (NVIC_PRI4_R&0x00FFFFFF)|0x40000000; // top 3 bits
-  NVIC_EN0_R = 1<<19;              // enable interrupt 19 in NVIC
-} */
+                                   // Timer2A=priority 1
+  NVIC_PRI5_R = (NVIC_PRI5_R&0x00FFFFFF)|0x20000000; // top 3 bits
+  NVIC_EN0_R = 1<<23;              // enable interrupt 23 in NVIC
+} 
 
 //arrays to store data at interrupts
 uint32_t time[1000];
@@ -133,14 +133,15 @@ int main(void){
   SYSCTL_RCGCGPIO_R |= 0x20;            // activate port F
   ADC0_InitSWTriggerSeq3_Ch9();         // allow time to finish activating
   Timer0A_Init100HzInt();               // set up Timer0A for 100 Hz interrupts
-	//Timer2A_Init10kHzInt();
+	Timer2A_Init10kHzInt();
   PortF_Init();
 	ST7735_InitR(INITR_REDTAB);
   PF2 = 0;                      // turn off LED
   EnableInterrupts();
 	char message[20];
   while(1){
-		/*ST7735_FillScreen(ST7735_BLACK); 
+		ST7735_FillScreen(ST7735_BLACK); 
+		//ST7735_Line(0,0,50,100,ST7735_WHITE);
     ST7735_SetCursor(0,0);
 		while(count < 1000){
 		  PF1 = (PF1*12345678)/1234567 +0x02; //to show jitter
@@ -152,7 +153,7 @@ int main(void){
     ST7735_FillScreen(0);  // set screen to black
     ST7735_SetCursor(0,0);
 		process_data();
-    Pause(); */
+    Pause(); 
 	  //PF1 ^= 0x02;    //regular
 		//GPIO_PORTF_DATA_R ^= 0x02;   //critical section
   }
@@ -241,6 +242,21 @@ void process_data(void){
 	return;
 	*/
 }
+
+
+// Subroutine to wait 10 msec
+// Inputs: None
+// Outputs: None
+// Notes: ...
+void DelayWait10ms(uint32_t n){uint32_t volatile time;
+  while(n){
+    time = 727240*2/91;  // 10msec
+    while(time){
+	  	time--;
+    }
+    n--;
+  }
+}
 //************* ST7735_Line********************************************
 //  Draws one line on the ST7735 color LCD
 //  Inputs: (x1,y1) is the start point
@@ -254,9 +270,9 @@ void process_data(void){
 //        color 16-bit color, which can be produced by ST7735_Color565() 
 // Output: none
 void ST7735_Line(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16_t color){
-  int32_t A, B, P;
-  int16_t current_y;
-
+  int32_t dy, dx, P;
+  int16_t current_y, current_x;
+	
   //make sure pixels are within area of screen
   if ((x1 < 128) && (y1 < 160)){
     //horizontal line
@@ -267,7 +283,7 @@ void ST7735_Line(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16_t co
         }
       }
       else if (y1 > y2){
-        for (int y = y2; y >= y1; y--){
+        for (int y = y2; y <= y1; y++){
           ST7735_DrawPixel(x1, y, color);
         }
       }
@@ -280,35 +296,36 @@ void ST7735_Line(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16_t co
         }
       }
       else if (x1 > x2){
-        for (int x = x2; x >= x1; x--){
+        for (int x = x2; x <= x1; x++){
           ST7735_DrawPixel(x, y1, color);
         }
       }
     }
     //diagonal line
     else {
-      ST7735_DrawPixel(x1, y1, color);
-      current_y = y1;
-      for (int x = x1 + 1; x < x2; x++) {
-        A = 2 * ((int16_t)y2 - current_y);
-        B = A - (2 * ((int16_t)x2 - x));
-        P = A - ((int16_t)x2 - x);
-        if (P < 0) {
-          P += A;
-        }
-        else {
-          current_y++;
-          P += B;
-        }
-        ST7735_DrawPixel(x, current_y, color);
-      }
-      ST7735_DrawPixel(x2, y2, color);
+      dx = x2 - x1;
+			dy = y2 - y1;
+			current_y = y1;
+			P = 2*dy - dx;
+			if(x1 < x2){
+				for(int x = x1;x < x2;x++){
+					ST7735_DrawPixel(x, current_y, color);
+					current_y++;
+					P = P + 2 * dy - 2 * dx;
+				}
+			}else{
+				for(int x = x2;x > x1;x--){
+					ST7735_DrawPixel(x, current_y, color);
+					P = P + 2 * dy;
+				}
+			}
+			
     }
 
 
 
     //diagonal line with positive slope (goes down and to the right)
-    /*else if ((x1 < x2) && (y1 < y2) && ((x2 - x1) > (y2 - y1))) {
+      /*else if ((x1 < x2) && (y1 < y2) && ((x2 - x1) > (y2 - y1))) {
       for (int x = x1; x <= x2; x++) {
         slope = (y2 - y1)/(x2 - x1);
         while (current_x <= x2) {
@@ -330,18 +347,3 @@ void ST7735_Line(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16_t co
 
   }
 }
-
-// Subroutine to wait 10 msec
-// Inputs: None
-// Outputs: None
-// Notes: ...
-void DelayWait10ms(uint32_t n){uint32_t volatile time;
-  while(n){
-    time = 727240*2/91;  // 10msec
-    while(time){
-	  	time--;
-    }
-    n--;
-  }
-}
-

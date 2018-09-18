@@ -11,23 +11,86 @@ Rebuild target 'Lab2'
 assembling startup.s...
 compiling ADCSWTrigger.c...
 compiling ADCTestMain.c...
-ADCTestMain.c(112): warning:  #177-D: variable "message" was declared but never referenced
-        char message[20];
-ADCTestMain.c: 1 warning, 0 errors
+line.h(23): warning:  #1-D: last line of file ends without a newline
+  //void ST7735_Line(uint16_t, uint16_t, uint16_t, uint16_t, uint16_t);
+ADCTestMain.c(274): warning:  #177-D: variable "current_x" was declared but never referenced
+    int16_t current_y, current_x;
+ADCTestMain.c: 2 warnings, 0 errors
 compiling PLL.c...
 compiling Timer1.c...
 compiling fixed.c...
 compiling ST7735.c...
+compiling line.c...
+line.c(10): warning:  #9-D: nested comment is not allowed
+  //************* ST7735_Line********************************************
+line.c(99): warning:  #1-D: last line of file ends without a newline
+  */
+line.c: 2 warnings, 0 errors
 linking...
-Program Size: Code=2968 RO-data=2052 RW-data=52 ZI-data=9124  
-".\Lab2.axf" - 0 Error(s), 1 Warning(s).
-mming Done.
+Program Size: Code=5352 RO-data=2068 RW-data=60 ZI-data=9124  
+".\Lab2.axf" - 0 Error(s), 4 Warning(s).
+Load "C:\\Users\\logan\\Documents\\445L\\Sample Projects\\ValvanoWareTM4C123\\Lab2\\Lab2.axf" 
+Connecting: Mode=JTAG, Speed=1000000Hz
+Erase Done.
+Programming Done.
 Verify OK.
-ter previous syntax error
-ADCTestMain.c: 2 warnings, 2 errors
-compiling PLL.c...
-compiling Timer1.c...
-compiling fixed.c...
-compiling ST7735.c...
-".\Lab2.axf" - 2 Error(s), 2 Warning(s).
+vanoWareTM4C123\\Lab2\\Lab2.axf" 
+Connecting: Mode=JTAG, Speed=1000000Hz
+Erase Done.
+Programming Done.
+Verify OK.
+list parameters may only be used in a function definition
+  void ST7735_Line(uint16_t, uint16_t, uint16_t, uint16_t, uint16_t);
+ST7735.h(140): error:  #20: identifier "int16_t" is undefined
+  void ST7735_DrawPixel(int16_t x, int16_t y, uint16_t color);
+ST7735.h(140): error:  #20: identifier "int16_t" is undefined
+  void ST7735_DrawPixel(int16_t x, int16_t y, uint16_t color);
+ST7735.h(140): error:  #20: identifier "uint16_t" is undefined
+  void ST7735_DrawPixel(int16_t x, int16_t y, uint16_t color);
+ST7735.h(151): error:  #20: identifier "int16_t" is undefined
+  void ST7735_DrawFastVLine(int16_t x, int16_t y, int16_t h, uint16_t color);
+ST7735.h(151): error:  #20: identifier "int16_t" is undefined
+  void ST7735_DrawFastVLine(int16_t x, int16_t y, int16_t h, uint16_t color);
+ST7735.h(151): error:  #20: identifier "int16_t" is undefined
+  void ST7735_DrawFastVLine(int16_t x, int16_t y, int16_t h, uint16_t color);
+ST7735.h(151): error:  #20: identifier "uint16_t" is undefined
+  void ST7735_DrawFastVLine(int16_t x, int16_t y, int16_t h, uint16_t color);
+ST7735.h(163): error:  #20: identifier "int16_t" is undefined
+  void ST7735_DrawFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color);
+ST7735.h(163): error:  #20: identifier "int16_t" is undefined
+  void ST7735_DrawFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color);
+ST7735.h(163): error:  #20: identifier "int16_t" is undefined
+  void ST7735_DrawFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color);
+ST7735.h(163): error:  #20: identifier "uint16_t" is undefined
+  void ST7735_DrawFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color);
+ST7735.h(171): error:  #20: identifier "uint16_t" is undefined
+  void ST7735_FillScreen(uint16_t color);
+ST7735.h(183): error:  #20: identifier "int16_t" is undefined
+  void ST7735_FillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color);
+ST7735.h(183): error:  #20: identifier "int16_t" is undefined
+  void ST7735_FillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color);
+ST7735.h(183): error:  #20: identifier "int16_t" is undefined
+  void ST7735_FillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color);
+ST7735.h(183): error:  #20: identifier "int16_t" is undefined
+  void ST7735_FillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color);
+ST7735.h(183): error:  #20: identifier "uint16_t" is undefined
+  void ST7735_FillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color);
+ST7735.h(192): error:  #20: identifier "uint16_t" is undefined
+  uint16_t ST7735_Color565(uint8_t r, uint8_t g, uint8_t b);
+ST7735.h(192): error:  #20: identifier "uint8_t" is undefined
+  uint16_t ST7735_Color565(uint8_t r, uint8_t g, uint8_t b);
+ST7735.h(192): error:  #20: identifier "uint8_t" is undefined
+  uint16_t ST7735_Color565(uint8_t r, uint8_t g, uint8_t b);
+ST7735.h(192): error:  #20: identifier "uint8_t" is undefined
+  uint16_t ST7735_Color565(uint8_t r, uint8_t g, uint8_t b);
+ST7735.h(199): error:  #20: identifier "uint16_t" is undefined
+  uint16_t ST7735_SwapColor(uint16_t x) ;
+ST7735.h(199): error:  #20: identifier "uint16_t" is undefined
+  uint16_t ST7735_SwapColor(uint16_t x) ;
+ST7735.h(221): error:  #20: identifier "int16_t" is undefined
+  void ST7735_DrawBitmap(int16_t x, int16_t y, const uint16_t *image, int16_t w, int16_t h);
+ST7735.h(221): error:  #20: identifier "int16_t" is undefined
+  void ST7735_DrawBitmap(int16_t x, int16_t y, const uint16_t *image, int16_t w, int16_t h);
+line.c: 1 warning, 30 errors
+".\Lab2.axf" - 30 Error(s), 3 Warning(s).
 Target not created
