@@ -126,7 +126,7 @@ void process_data(void){
   //find how many unique numbers in the 1000 inputs
   uint32_t n = 0; //number of unique numbers in the 1000
   for (int i = 1; i < 1000; i++) {
-    if (data[i - 1] < data[i]) {
+    if (data[i] < data[i - 1]) {
       n++;
     }
   }
@@ -135,10 +135,10 @@ void process_data(void){
   uint32_t data_count[n];
   uint32_t data_num[n];
   uint32_t num_count; 
-  uint32_t index = 0;
+  uint32_t ind = 0;
   uint32_t k = 0;
-  while ((k < 1000) && (index < n)) {
-    data_num[index] = data[k];
+  while ((k < 1000) && (ind < n)) {
+    data_num[ind] = data[k];
     num_count = 0;
     while (data[k] == data[k+1]) {
       num_count++;
@@ -146,13 +146,13 @@ void process_data(void){
     }
     num_count++;
     k++;
-    data_count[index] = num_count;
-    index++;
+    data_count[ind] = num_count;
+    ind++;
   }
 
   //print graph to screen
-  double res = 127 / (data_num[index-1] - data_num[0]);
-  for (int l = index - 1; l >= 0; l--){
+  double res = 127 / (data_num[ind - 1] - data_num[0]);
+  for (int l = ind - 1; l >= 0; l--){
     ST7735_Line((int)(data_num[l] * res), (int)(data_num[l] * res), 159, (data_count[l] / 6.5), ST7735_BLACK);
   }
 }
